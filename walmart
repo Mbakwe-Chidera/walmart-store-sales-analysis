@@ -1,0 +1,301 @@
+USE wallmartDB
+GO
+
+SELECT top 3 * FROM sales;
+
+--Perform some data cleaning
+--check for missing values
+SELECT *
+FROM sales
+WHERE Store IS NULL OR Date IS NULL OR Weekly_Sales IS NULL OR Holiday_Flag IS NULL OR Temperature IS NULL OR Fuel_Price IS NULL OR CPI IS NULL OR Unemployment IS NULL;
+-- there is no missing value
+
+--checking for duplicate rows
+SELECT *
+FROM sales
+GROUP BY Store, Date, Weekly_Sales, Holiday_Flag, Temperature, Fuel_Price, CPI, Unemployment
+HAVING COUNT(*) > 1;
+-- there are no duplicated values
+
+
+
+
+
+--summary statistics for numeric columns
+SELECT
+    MIN(Weekly_Sales) AS Min_Weekly_Sales,
+    MAX(Weekly_Sales) AS Max_Weekly_Sales,
+    AVG(Weekly_Sales) AS Avg_Weekly_Sales,
+    MIN(Temperature) AS Min_Temperature,
+    MAX(Temperature) AS Max_Temperature,
+    AVG(Temperature) AS Avg_Temperature,
+    MIN(Fuel_Price) AS Min_Fuel_Price,
+    MAX(Fuel_Price) AS Max_Fuel_Price,
+    AVG(Fuel_Price) AS Avg_Fuel_Price,
+    MIN(CPI) AS Min_CPI,
+    MAX(CPI) AS Max_CPI,
+    AVG(CPI) AS Avg_CPI,
+    MIN(Unemployment) AS Min_Unemployment,
+    MAX(Unemployment) AS Max_Unemployment,
+    AVG(Unemployment) AS Avg_Unemployment
+FROM sales;
+-- The weekly sales range from approximately $209,986.25 to $3,818,686.45, with an average weekly sales of approximately $1,046,964.88.
+-- The temperature ranges from -2.06°F to 100.14°F, with an average temperature of approximately 60.66°F
+-- The fuel price ranges from approximately $2.472 to $4.468, with an average fuel price of approximately $3.36.
+-- The CPI ranges from approximately 126.064 to 227.233, with an average CPI of approximately 171.578.
+-- The unemployment rate ranges from approximately 3.879% to 14.313%, with an average unemployment rate of approximately 7.999%.
+
+
+
+
+--EXPLORATORY DATA ANALYSIS
+
+--TOTAL SALES BY STORE
+SELECT Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store;
+-- Sales Distribution: The weekly sales vary significantly across different stores, with some stores having notably higher sales than others.
+--Top Performing Stores: Stores such as Store 27, Store 10, and Store 2 stand out as top performers, with exceptionally high weekly sales.
+--Challenges: Some stores, such as Store 39 and Store 14, seem to face challenges in generating substantial weekly sales compared to others.
+--Opportunities: Stores with relatively lower sales could explore strategies to enhance their performance and increase their weekly sales.
+--Overall Trends: While there are fluctuations in weekly sales across stores, overall trends indicate a mix of high-performing and moderate-performing stores.
+
+--average weekly sales per store
+SELECT Store, AVG(Weekly_Sales) AS Avg_Weekly_Sales
+FROM sales
+GROUP BY Store;
+
+
+--TOTAL SALES DURING HOLIDAY AND NON HOLIDAY
+SELECT Holiday_Flag, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Holiday_Flag;
+--Total Sales During Non-Holiday Periods: $6,231,919,435.55
+--Total Sales During Holiday Periods: $505,299,551.56
+--These figures highlight the significant difference in sales between holiday and non-holiday periods, indicating the potential impact of holidays on consumer spending behavior.
+
+
+-- Average temperature and total sales:
+SELECT Temperature, AVG(Weekly_Sales) AS Avg_Weekly_Sales
+FROM sales
+GROUP BY Temperature;
+
+
+
+-- Total sales trend over time for each store:
+SELECT Store, Date, Weekly_Sales
+FROM sales
+ORDER BY Store, Date;
+
+-- Top selling dates (by total sales):
+SELECT top 5 Date, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Date
+ORDER BY Total_Sales DESC;
+-- These dates represent peak periods of sales activity, likely corresponding to significant holidays or promotional events. 
+
+-- Impact of CPI on sales:
+SELECT top 5 CPI, AVG(Weekly_Sales) AS Avg_Weekly_Sales
+FROM sales
+GROUP BY CPI
+ORDER BY CPI DESC;
+--Observations:
+--The analysis suggests a correlation between CPI values and average weekly sales, with higher CPI values generally corresponding to higher average weekly sales.
+--Fluctuations in CPI values may influence consumer purchasing power and behavior, impacting sales performance.
+--Implications:
+--Understanding the relationship between CPI and sales can help businesses anticipate and respond to changes in economic conditions.
+--Monitoring CPI trends enables businesses to make informed decisions regarding pricing strategies, inventory management, and promotional activities.
+
+--cpi for each quarter
+SELECT 
+    YEAR(Date) AS Year,
+    DATEPART(QUARTER, Date) AS Quarter,
+    AVG(CPI) AS Average_CPI
+FROM sales
+GROUP BY 
+    YEAR(Date),
+    DATEPART(QUARTER, Date)
+ORDER BY 
+    Year,
+    Quarter;
+-- Observations:
+--CPI shows a general increasing trend over the years, with slight fluctuations between quarters.
+--Q4 of each year tends to have the highest CPI values, indicating potential seasonal or year-end economic factors.
+
+
+-- Total sales for each store during weeks with low CPI (< X150), sorted by store:
+SELECT top 5 Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+WHERE CPI < 150
+GROUP BY Store
+ORDER BY Total_Sales DESC;
+--Despite challenging economic conditions characterized by low CPI values,
+--the top-performing Walmart stores have demonstrated resilience and strong sales performance.
+--By leveraging insights from this analysis, Walmart can refine its strategies, optimize resource allocation, and maintain its competitive edge in the retail market.
+
+--TOTAL SALES DURING HOLIDAY AND NON HOLIDAY by store
+SELECT top 5
+    Store,
+    SUM(CASE WHEN Holiday_Flag = 1 THEN Weekly_Sales ELSE 0 END) AS Total_Sales_Holiday,
+    SUM(CASE WHEN Holiday_Flag = 0 THEN Weekly_Sales ELSE 0 END) AS Total_Sales_Non_Holiday
+FROM 
+    sales
+GROUP BY 
+    Store;
+--Observations:
+--Total sales vary significantly between holiday and non-holiday periods for each store.
+--Some stores demonstrate higher sales during holidays, while others perform better during non-holidays.
+--Understanding sales patterns during different periods can help businesses tailor their marketing and sales strategies accordingly.
+
+--Total sales trend over time for each store
+SELECT top 5 Store, Date, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store, Date
+ORDER BY Total_Sales desc, Date;
+--The top-performing stores experienced peak sales on specific dates, with December 24, 2010, being a significant sales day for multiple stores.
+--Store 14, Store 20, and Store 10 recorded exceptionally high sales on December 24, 2010, indicating strong holiday shopping activity.
+--Store 4 saw a surge in sales on December 23, 2011, suggesting effective sales strategies or promotions during the holiday season.
+--Store 13 also experienced notable sales on December 24, 2010, highlighting its performance during peak shopping periods.
+
+
+--Total sales for each store, sorted by the top 5 performing stores
+SELECT TOP 5 Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store
+ORDER BY Total_Sales DESC;
+
+--BOTTOM 10
+SELECT TOP 10 Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store
+ORDER BY Total_Sales ASC;
+--The bottom 10 stores exhibit varying levels of total sales, with Store 33 having the lowest total sales among them.
+--Store 29 has the highest total sales among the bottom 10 stores, indicating relatively better performance compared to others in this group.
+--Factors contributing to lower total sales could include location, market demographics, competition, and store-specific strategies.
+
+
+--Average sales per store and holiday type:
+SELECT top 5 Store, Holiday_Flag, AVG(Weekly_Sales) AS Avg_Weekly_Sales
+FROM sales
+GROUP BY Store, Holiday_Flag
+ORDER BY Avg_Weekly_Sales ASC;
+--The average weekly sales per store vary across different holiday types, with slight fluctuations observed between holiday and non-holiday periods.
+--Stores 33 and 44 exhibit lower average weekly sales compared to Store 5, indicating potential differences in market demographics, store location, or promotional strategies.
+--While there is a slight increase in average weekly sales during holidays for Stores 33 and 44, the difference is not significant compared to Store 5.
+
+-- Total sales distribution across different temperature ranges
+SELECT Temperature_Range, SUM(Weekly_Sales) AS Total_Sales
+FROM (
+    SELECT CASE
+               WHEN Temperature < 50 THEN 'Cold'
+               WHEN Temperature >= 50 AND Temperature < 70 THEN 'Moderate'
+               ELSE 'Hot'
+           END AS Temperature_Range,
+           Weekly_Sales
+    FROM sales
+) AS SalesByTemperatureRange
+GROUP BY Temperature_Range;
+--The analysis reveals that moderate temperature ranges contribute the highest total sales, followed by hot and cold temperature ranges.
+--This suggests a potential correlation between moderate temperatures and increased consumer activity and spending compared to extreme hot or cold temperatures.
+--Retail strategies and promotions tailored to moderate temperature conditions may be more effective in driving sales during various seasons.
+
+-- monthly sales trend
+SELECT 
+    DATEPART(YEAR, Date) AS Year,
+    DATEPART(MONTH, Date) AS Month,
+    SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY 
+    DATEPART(YEAR, Date),
+    DATEPART(MONTH, Date)
+ORDER BY 
+    Year, 
+    Month;
+--Sales exhibit seasonal variations, with December consistently emerging as the highest sales month across all three years, likely influenced by holiday shopping.
+--The summer months, particularly June and July, also demonstrate notable sales peaks, possibly due to seasonal promotions and increased consumer activity during warmer weather.
+--January appears to be a consistently low-sales month, which could be attributed to reduced consumer spending post-holiday season and harsh winter weather conditions.
+
+--yearly sales trend
+SELECT 
+    DATEPART(YEAR, Date) AS Year,
+    SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY 
+    DATEPART(YEAR, Date)
+ORDER BY 
+    Year;
+--2010 vs. 2011: Sales increased from 2010 to 2011, with a growth of approximately $159 million. This growth could be attributed to various factors such as economic recovery, expanded product offerings, or improved marketing strategies.
+--2011 vs. 2012: Sales experienced a slight decline in 2012 compared to 2011, with a decrease of approximately $448 million. Possible factors contributing to this decline could include economic downturn, changes in consumer behavior, or increased competition.
+
+
+--which store sold more product than average product sold
+WITH StoreSales AS (
+    SELECT Store, SUM(Weekly_Sales) AS Total_Sales
+    FROM sales
+    GROUP BY Store
+)
+SELECT TOP 5 Store, Total_Sales
+FROM StoreSales
+ORDER BY Total_Sales DESC;
+--Store Performance: The top 5 stores significantly outperform others in terms of total sales, indicating strong sales strategies, effective marketing efforts, or advantageous locations.
+--Factors Driving Sales: Further analysis is needed to identify the specific factors contributing to the success of these top-performing stores, such as product offerings, customer service, or store management practices.
+--Competitive Advantage: Understanding the strengths and strategies of these top-performing stores can provide insights for other stores to improve their sales performance and competitiveness.
+
+-- month that generated highest sales
+SELECT TOP 5
+    YEAR(Date) AS Year,
+    MONTH(Date) AS Month,
+    SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY 
+    YEAR(Date),
+    MONTH(Date)
+ORDER BY 
+    Total_Sales DESC;
+--Seasonal Trends: December appears to be the month with consistently high sales across multiple years, possibly due to holiday shopping and year-end promotions.
+--Yearly Variations: While December consistently ranks high, other months such as June and August in 2012 also show significant sales, indicating potential seasonal variations or one-time events influencing sales performance.
+--Implications for Business: Understanding the months with the highest sales can help businesses plan marketing campaigns, promotions, and inventory management strategies to capitalize on peak sales periods.
+
+-- Total sales for each store, sorted by the top 10 performing stores:
+SELECT top 10 Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store
+ORDER BY Total_Sales DESC;
+
+-- Total sales for each store, sorted by the bottom 10 performing stores:
+SELECT top 10 Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+GROUP BY Store
+ORDER BY Total_Sales;
+
+-- Total sales for each store during weeks with high fuel prices (> 4), sorted by store:
+SELECT Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+WHERE Fuel_Price > 4
+GROUP BY Store
+ORDER BY Store;
+
+-- Total sales for each store during weeks with high unemployment (> 10), sorted by store:
+SELECT Store, SUM(Weekly_Sales) AS Total_Sales
+FROM sales
+WHERE Unemployment > 10
+GROUP BY Store
+ORDER BY Store;
+--Impact of High Fuel Prices: Despite high fuel prices, several stores have managed to maintain respectable sales figures, indicating resilience and effective sales strategies.
+--Store Performance: Stores 10 and 27 stand out with notably high sales figures during weeks with high fuel prices, suggesting successful management practices or strong customer loyalty.
+--Sales Strategies: Further analysis is needed to understand the specific sales strategies or promotions implemented by these stores to mitigate the impact of high fuel prices on consumer spending.
+
+
+--total revenue
+SELECT FORMAT(SUM(Weekly_Sales), 'C', 'en-US') AS Total_Revenue
+FROM sales;
+
+--no of stores
+SELECT COUNT(DISTINCT Store) AS Number_of_Stores
+FROM sales;
+
+--unemployment rate
+SELECT AVG(Unemployment) AS Average_Unemployment_Rate
+FROM sales;
+
+
